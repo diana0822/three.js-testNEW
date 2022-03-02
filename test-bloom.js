@@ -13,7 +13,7 @@ let model;
 
 let scene = new THREE.Scene();
 let camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(7.7, 2.5, 5);
+camera.position.set(7.7, 2.5, 2.5);
 let renderer = new THREE.WebGLRenderer();
 renderer.setSize(innerWidth, innerHeight);
 //renderer.setClearColor(0x404040);
