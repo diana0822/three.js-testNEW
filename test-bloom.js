@@ -1,6 +1,7 @@
 console.clear();
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.127.0/build/three.module.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.127.0/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader } from './GLTFLoader.js';
+import { DRACOLoader } from './DRACOLoader.js';
 //import { FBXLoader } from './FBXLoader.js';
 
 //import { RoomEnvironment } from './RoomEnvironment.js';
@@ -16,7 +17,9 @@ let model;
 
 let scene = new THREE.Scene();
 let camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(7.7, 2.5, 7.2);
+camera.position.set(4, -5.5, 3);
+camera.rotation.set(6.3, 0.5, 0)
+
 let renderer = new THREE.WebGLRenderer();
 renderer.setSize(innerWidth, innerHeight);
 //renderer.setClearColor(0x404040);
@@ -24,8 +27,8 @@ document.body.appendChild(renderer.domElement);
 
 //let pmremGenerator = new THREE.PMREMGenerator(renderer);
 
-let controls = new OrbitControls(camera, renderer.domElement);
-controls.addEventListener("change", e => { console.log(camera.position) })
+//let controls = new OrbitControls(camera, renderer.domElement);
+//controls.addEventListener("change", e => { console.log(camera.position) })
 
 scene.background = new THREE.Color(0x000000);
 //scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -39,17 +42,29 @@ let uniforms = {
     globalBloom: { value: 1 }
 }
 
-/*const loader = new FBXLoader();
-loader.load('TestBox.fbx', function(object) {
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('gltf/');
 
-    //model = object.scene;
-    let emssvTex = new THREE.TextureLoader().load("./mission-01.jpg", function(texture) {
-        texture.flipY = false
+let mixer, mixer2;
+let model2, model3, model4;
+
+const clock = new THREE.Clock();
+const clock2 = new THREE.Clock();
+
+let loader3 = new GLTFLoader();
+loader3.setDRACOLoader(dracoLoader);
+loader3.load("noLightMove.glb", function(gltf) {
+    model3 = gltf.scene;
+    let emssvTex2 = new THREE.TextureLoader().load("https://raw.githubusercontent.com/diana0822/test-new/gh-pages/020202-01.jpg", function(texture) {
+        texture.flipY = true
+            //texture.wrapS = THREE.RepeatWrapping;
+            //texture.wrapT = THREE.RepeatWrapping;
+            //texture.repeat.set(1, 1);
         texture.encoding = THREE.sRGBEncoding
     })
-    object.traverse(function(child) {
+    model3.traverse(function(child) {
         if (child.isMesh) {
-            child.material.emissiveMap = emssvTex;
+            child.material.emissiveMap = emssvTex2;
             child.material.onBeforeCompile = shader => {
                 shader.uniforms.globalBloom = uniforms.globalBloom;
                 shader.fragmentShader = `
@@ -63,18 +78,94 @@ loader.load('TestBox.fbx', function(object) {
             }
           `
                 );
-                console.log(shader.fragmentShader);
+                //console.log(shader.fragmentShader);
             }
         }
     });
-    object.scale.setScalar(40);
-    scene.add(object);
 
-});*/
+    mixer = new THREE.AnimationMixer(model3)
+    mixer.clipAction(gltf.animations[0]).play();
 
-let model2;
+    animate();
+
+    model3.scale.setScalar(10);
+
+    scene.add(model3);
+
+}, undefined, function(error) {
+
+    console.error(error);
+
+});
+
+let loader4 = new GLTFLoader();
+loader4.setDRACOLoader(dracoLoader);
+loader4.load("LightMove.glb", function(gltf) {
+    model4 = gltf.scene;
+    let emssvTex2 = new THREE.TextureLoader().load("https://raw.githubusercontent.com/diana0822/test-new/gh-pages/010101-01.jpg", function(texture) {
+        texture.flipY = true
+            //texture.wrapS = THREE.RepeatWrapping;
+            //texture.wrapT = THREE.RepeatWrapping;
+            //texture.repeat.set(1, 1);
+        texture.encoding = THREE.sRGBEncoding
+    })
+    model4.traverse(function(child) {
+        if (child.isMesh) {
+            child.material.emissiveMap = emssvTex2;
+            child.material.onBeforeCompile = shader => {
+                shader.uniforms.globalBloom = uniforms.globalBloom;
+                shader.fragmentShader = `
+            uniform float globalBloom;
+          ${shader.fragmentShader}
+        `.replace(
+                    `#include <dithering_fragment>`,
+                    `#include <dithering_fragment>
+            if (globalBloom > 0.5){
+                gl_FragColor = texture2D( emissiveMap, vUv );
+            }
+          `
+                );
+                //console.log(shader.fragmentShader);
+            }
+        }
+    });
+
+    mixer2 = new THREE.AnimationMixer(model4)
+    mixer2.clipAction(gltf.animations[0]).play();
+
+    animate2();
+
+    model4.scale.setScalar(10);
+
+    scene.add(model4);
+
+}, undefined, function(error) {
+
+    console.error(error);
+
+});
+
+function animate() {
+
+    requestAnimationFrame(animate);
+
+    const delta = clock.getDelta();
+
+    mixer.update(delta);
+}
+
+function animate2() {
+
+    requestAnimationFrame(animate2);
+
+    const delta2 = clock2.getDelta();
+
+    mixer2.update(delta2);
+}
+
 let loader2 = new GLTFLoader();
-loader2.load("mix-nolight.glb", function(gltf) {
+loader2.setDRACOLoader(dracoLoader);
+loader2.load("noLightWithoutMove.glb", function(gltf) {
     model2 = gltf.scene;
     let emssvTex2 = new THREE.TextureLoader().load("https://raw.githubusercontent.com/diana0822/test-new/gh-pages/020202-01.jpg", function(texture) {
         texture.flipY = true
@@ -99,7 +190,7 @@ loader2.load("mix-nolight.glb", function(gltf) {
             }
           `
                 );
-                console.log(shader.fragmentShader);
+                //console.log(shader.fragmentShader);
             }
         }
     });
@@ -115,7 +206,8 @@ loader2.load("mix-nolight.glb", function(gltf) {
 });
 
 let loader = new GLTFLoader();
-loader.load("mix-light.glb", function(gltf) {
+loader.setDRACOLoader(dracoLoader);
+loader.load("LightWithoutMove.glb", function(gltf) {
     model = gltf.scene;
     let emssvTex = new THREE.TextureLoader().load("https://raw.githubusercontent.com/diana0822/test-new/gh-pages/010101-01.jpg", function(texture) {
         texture.flipY = true
@@ -140,7 +232,7 @@ loader.load("mix-light.glb", function(gltf) {
             }
           `
                 );
-                console.log(shader.fragmentShader);
+                //console.log(shader.fragmentShader);
             }
         }
     });
